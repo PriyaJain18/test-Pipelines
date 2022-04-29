@@ -1,4 +1,4 @@
-pipeline { 
+pipeline {
     agent any          //where to execute(which node etc)
     //pipeline + agent = node in groovy script 
    //Types of parameters : string, choice , booleanParam
@@ -8,9 +8,10 @@ pipeline {
         booleanParam(name: 'executeTests', defaultValue: true, description: '')
     }
     
-    tools{  //maven,grade,jdk
+    tools{  //maven,grade,jdk   // Install the Maven version configured as "Maven" and add it to the path.
         maven 'Maven'         //front-end or backend tools reuqired by these pipelines; should be there in your pc 
     }
+    
     
     environment {
         NEW_VERSION = '1.3.1'
@@ -18,61 +19,61 @@ pipeline {
     }
     
     stages {
-
-    stage('initialize'){
-        steps {
-            script {
-                gv = load "script2.groovy"
-                gv.initializeApp()
+        stage('initialize'){
+            steps {
+                    script {
+                        gv = load "script2.groovy"
+                        gv.initializeApp()
+                    }
             }
-            
         }
-    }
-    stage("build"){
-        when{
-            expression{
+        stage("build"){
+            when{
+                expression{
                         BRANCH_NAME == 'main' || BRANCH_NAME == 'master' && CODE_CHANGES == true;              //BRANCH_NAME and CODE_CHANGES -> environment variables by Jenkins        
+                }
+            }
+            steps{     
+                mvn install;
+                echo "maven installed ! "  
+                echo "building app version ${NEW_VERSION}";       //Use Double-quotes when accessing a varibale etc inside a sentence , oherwise use Single ' ' normally 
             }
         }
-        steps{     
-            mvn install;
-            echo "maven installed ! "  
-            echo "building app version ${NEW_VERSION}";       //Use Double-quotes when accessing a varibale etc inside a sentence , oherwise use Single ' ' normally 
-        }
-    }
-    stage("test"){
-        when{
-            expression{
-                params.executeTests == true
+        stage("test"){
+            when{
+                expression{
+                        params.executeTests == true
+                }
             }
-        }
-        steps{
-            script {
-                gv.testApp()
+            steps{
+                script {
+                        gv.testApp()
+                }
+                echo "credentials : ${SERVER_CREDENTIALS}"
             }
-            echo "credentials : ${SERVER_CREDENTIALS}"
         }
         
-    }
-        
-    stage("deploy"){   
-        steps{
-            echo "deploying app version ${params.VERSION}"
-            withCredentials([ 
+        stage("deploy"){   
+            steps{
+                echo "deploying app version ${params.VERSION}"
+                withCredentials([ 
                         usernamePassword(credentials: 'GithubAccount' , usernameVariable: USER , password: PWD) 
-            ]){
+                ]){
                 sh "some script with user :  ${USER} ${PWD}"
+                }
             }
         }
     }
-    }
-    post{
+        
+
+    post {
         always{
-            echo "always executed code appears here !" 
+            echo "FINALLY : CODE COMPLETED"
         }
-        failure{
-            echo "Pipeline Failed" 
+                // If Maven was able to run the tests, even if some of the test
+                // failed, record the test results and archive the jar file.
+        failure {
+            echo "PIPELINE FAILED"
         }
     }
 }
-
