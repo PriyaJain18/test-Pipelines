@@ -3,13 +3,13 @@ pipeline {
     //pipeline + agent = node in groovy script 
    //Types of parameters : string, choice , booleanParam
     parameters{
-    //  string(name: 'VERSION', defaultValue: '', description: 'version to deploy on production')
-        choice(name: 'VERSION', choices: ['1.1.0','1.2.0'], description: '')
+        string(name: 'VERSION', defaultValue: '', description: 'version to deploy on production')
+     //   choice(name: 'VERSION', choices: ['1.1.0','1.2.0'], description: '')
         booleanParam(name: 'executeTests', defaultValue: true, description: '')
     }
     
     tools{  //maven,grade,jdk
-        maven Maven<name>         //front-end or backend tools reuqired by these pipelines; should be there in your pc 
+        maven 'Maven'         //front-end or backend tools reuqired by these pipelines; should be there in your pc 
     }
     
     environment {
@@ -34,9 +34,10 @@ pipeline {
                         BRANCH_NAME == 'main' || BRANCH_NAME == 'master' && CODE_CHANGES == true;              //BRANCH_NAME and CODE_CHANGES -> environment variables by Jenkins        
             }
         }
-        steps{
-            echo 'building app';                     
-            echo "built version ${NEW_VERSION}";       //Use Double-quotes when accessing a varibale etc inside a sentence , oherwise use Single ' ' normally 
+        steps{     
+            mvn install;
+            echo "maven installed ! "  
+            echo "building app version ${NEW_VERSION}";       //Use Double-quotes when accessing a varibale etc inside a sentence , oherwise use Single ' ' normally 
         }
     }
     stage("test"){
@@ -58,16 +59,16 @@ pipeline {
         steps{
             echo "deploying app version ${params.VERSION}"
             withCredentials([ 
-                        usernamePassword(credentials: 'github-credentials' , usernameVariable: USER , password: PWD) 
+                        usernamePassword(credentials: 'GithubAccount' , usernameVariable: USER , password: PWD) 
             ]){
-                sh "some script ${USER} ${PWD}"
+                sh "some script with user :  ${USER} ${PWD}"
             }
         }
     }
     }
     post{
         always{
-            echo "always executed code appears" 
+            echo "always executed code appears here !" 
         }
         failure{
             echo "Pipeline Failed" 
